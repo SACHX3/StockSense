@@ -1,0 +1,41 @@
+# ── Maven ───────────────────────────────────────────────────
+spring-boot-backend/target/
+spring-boot-backend/.mvn/wrapper/maven-wrapper.jar
+!spring-boot-backend/.mvn/wrapper/maven-wrapper.properties
+
+# ── Python ──────────────────────────────────────────────────
+fastapi-service/__pycache__/
+fastapi-service/**/__pycache__/
+fastapi-service/*.pyc
+fastapi-service/venv/
+fastapi-service/.venv/
+fastapi-service/ml_models/*.pkl
+fastapi-service/.pytest_cache/
+
+# ── IDE ─────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.iws
+.project
+.classpath
+.settings/
+
+# ── OS ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Uploads (user data — not in git) ────────────────────────
+spring-boot-backend/uploads/
+uploads/
+
+# ── Logs ────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Secrets (never commit these) ────────────────────────────
+*.env
+.env.*
+application-prod.properties
+application-production.properties
