@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout(~{::content}, ~{::scripts})}">
+
+<th:block th:fragment="content">
+
+<div class="page-header">
+  <div>
+    <h4><i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard</h4>
+    <p class="text-muted mb-0" style="font-size:.85rem;">Welcome back! Here's your store overview.</p>
+  </div>
+  <span class="badge bg-light text-dark border py-2 px-3" style="font-size:.82rem;">
+    <i class="bi bi-calendar3 me-1"></i>
+    <span th:text="${#temporals.format(#temporals.createNow(), 'dd MMM yyyy')}">Today</span>
+  </span>
+</div>
+
+<!-- KPI CARDS -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="s-label">Total Products</div>
+          <div class="s-value" th:text="${stats.totalProducts}">0</div>
+          <div class="s-sub">Active items</div>
+        </div>
+        <i class="bi bi-box-seam s-icon"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#16a34a,#15803d);">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="s-label">Suppliers</div>
+          <div class="s-value" th:text="${stats.totalSuppliers}">0</div>
+          <div class="s-sub">Active suppliers</div>
+        </div>
+        <i class="bi bi-truck s-icon"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#d97706,#b45309);">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="s-label">Low Stock</div>
+          <div class="s-value" th:text="${stats.lowStockProducts}">0</div>
+          <div class="s-sub">Need restocking</div>
+        </div>
+        <i class="bi bi-exclamation-triangle s-icon"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#0891b2,#0e7490);">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="s-label">Today Revenue</div>
+          <div class="s-value" style="font-size:1.3rem;"
+               th:text="'Rs. ' + ${#numbers.formatDecimal(stats.todayRevenue != null ? stats.todayRevenue : 0, 0, 'COMMA', 0, 'POINT')}">Rs. 0</div>
+          <div class="s-sub" th:text="${stats.todaySalesCount} + ' sales today'">0 sales today</div>
+        </div>
+        <i class="bi bi-currency-exchange s-icon"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- Daily Sales Chart - Last 30 Days -->
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>
+          <i class="bi bi-bar-chart-line me-2 text-primary"></i>
+          <strong>Daily Sales Revenue</strong>
+          <small class="text-muted ms-1">(Last 30 Days)</small>
+        </span>
+        <span class="badge bg-success"
+              th:text="'This Month: Rs. ' + ${#numbers.formatDecimal(stats.monthlyRevenue != null ? stats.monthlyRevenue : 0, 0, 'COMMA', 0, 'POINT')}">
+        </span>
+      </div>
+      <div class="card-body">
+        <div id="noDataMsg" class="text-center text-muted py-4" style="display:none;">
+          <i class="bi bi-bar-chart fs-1 text-secondary d-block mb-2"></i>
+          <p class="mb-0">No sales in the last 30 days. Start making sales!</p>
+        </div>
+        <canvas id="dailyChart" style="max-height:250px;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Low Stock Alert -->
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Low Stock</span>
+        <a th:href="@{/products/low-stock}" class="btn btn-sm btn-outline-warning">View All</a>
+      </div>
+      <div class="card-body p-0" style="max-height:300px;overflow-y:auto;">
+        <div th:if="${stats.lowStockItems == null or #lists.isEmpty(stats.lowStockItems)}"
+             class="p-4 text-center text-muted">
+          <i class="bi bi-check-circle text-success fs-2"></i>
+          <p class="mt-2 mb-0 small">All products well stocked!</p>
+        </div>
+        <div th:each="item : ${stats.lowStockItems}"
+             class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom gap-2">
+          <!-- Product image thumbnail -->
+          <div style="width:36px;height:36px;border-radius:7px;overflow:hidden;
+                      background:#f1f5f9;display:flex;align-items:center;
+                      justify-content:center;flex-shrink:0;border:1px solid #e2e8f0;">
+            <img th:if="${item.imagePath}"
+                 th:src="@{'/' + ${item.imagePath}}"
+                 style="width:36px;height:36px;object-fit:cover;"
+                 onerror="this.parentElement.innerHTML='&lt;i class=&quot;bi bi-box&quot; style=&quot;color:#94a3b8;font-size:.9rem;&quot;&gt;&lt;/i&gt;'"/>
+            <i th:unless="${item.imagePath}"
+               class="bi bi-box" style="color:#94a3b8;font-size:.9rem;"></i>
+          </div>
+          <!-- Name + SKU -->
+          <div class="flex-grow-1" style="min-width:0;">
+            <div style="font-size:.83rem;font-weight:600;color:#1e293b;
+                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                 th:text="${item.name}">Product</div>
+            <small class="text-muted" th:text="'SKU: ' + ${item.sku}">SKU</small>
+          </div>
+          <!-- Stock badge -->
+          <div class="text-end flex-shrink-0">
+            <span th:classappend="${item.quantity == 0} ? 'badge bg-danger' : 'badge bg-warning text-dark'"
+                  th:text="${item.quantity} + ' left'">0</span>
+            <div style="font-size:.7rem;color:#94a3b8;margin-top:2px;"
+                 th:text="'Min: ' + ${item.minStockLevel}"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Top Selling Products -->
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-trophy me-2 text-warning"></i>Top Selling Products
+        <small class="text-muted">(Last 3 Months)</small>
+      </div>
+      <div class="card-body p-0">
+        <div th:if="${stats.topSellingProducts == null or #lists.isEmpty(stats.topSellingProducts)}"
+             class="p-4 text-center text-muted">
+          <i class="bi bi-bar-chart-line fs-2 text-secondary"></i>
+          <p class="mt-2 mb-0 small">No sales recorded yet.</p>
+        </div>
+        <table th:unless="${stats.topSellingProducts == null or #lists.isEmpty(stats.topSellingProducts)}"
+               class="table mb-0">
+          <thead>
+            <tr><th>#</th><th style="width:46px;"></th><th>Product</th><th>Sold</th><th>Revenue</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="p, i : ${stats.topSellingProducts}">
+              <!-- Rank badge -->
+              <td style="vertical-align:middle;">
+                <span th:classappend="${i.index == 0} ? 'badge bg-warning text-dark' : 'badge bg-light text-dark border'"
+                      th:text="${i.index + 1}">1</span>
+              </td>
+              <!-- Product image -->
+              <td style="vertical-align:middle;padding:6px 4px;">
+                <div style="width:38px;height:38px;border-radius:8px;overflow:hidden;
+                            background:#f1f5f9;display:flex;align-items:center;
+                            justify-content:center;border:1px solid #e2e8f0;">
+                  <img th:if="${p.imagePath}"
+                       th:src="@{'/' + ${p.imagePath}}"
+                       style="width:38px;height:38px;object-fit:cover;"
+                       onerror="this.parentElement.innerHTML='&lt;i class=&quot;bi bi-box&quot; style=&quot;color:#94a3b8;font-size:1rem;&quot;&gt;&lt;/i&gt;'"/>
+                  <i th:unless="${p.imagePath}"
+                     class="bi bi-box" style="color:#94a3b8;font-size:1rem;"></i>
+                </div>
+              </td>
+              <!-- Name -->
+              <td style="vertical-align:middle;font-weight:500;" th:text="${p.productName}">Product</td>
+              <!-- Sold -->
+              <td style="vertical-align:middle;">
+                <span class="badge bg-primary" th:text="${p.quantity}">0</span>
+              </td>
+              <!-- Revenue -->
+              <td style="vertical-align:middle;" class="text-success fw-600"
+                  th:text="'Rs. ' + ${#numbers.formatDecimal(p.revenue != null ? p.revenue : 0, 0, 'COMMA', 0, 'POINT')}">0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-lightning me-2 text-info"></i>Quick Actions</div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <a th:href="@{/sales/create}" class="btn btn-primary">
+            <i class="bi bi-cart-plus me-2"></i>New Sale (POS Terminal)
+          </a>
+          <a th:href="@{/products/create}" class="btn btn-outline-primary"
+             sec:authorize="hasAnyRole('ADMIN','INVENTORY_MANAGER')">
+            <i class="bi bi-plus-circle me-2"></i>Add New Product
+          </a>
+          <a th:href="@{/inventory/adjust}" class="btn btn-outline-success"
+             sec:authorize="hasAnyRole('ADMIN','INVENTORY_MANAGER')">
+            <i class="bi bi-arrow-left-right me-2"></i>Stock Adjustment
+          </a>
+          <a th:href="@{/ocr/upload}" class="btn btn-outline-info"
+             sec:authorize="hasAnyRole('ADMIN','INVENTORY_MANAGER')">
+            <i class="bi bi-file-earmark-text me-2"></i>Upload Invoice (OCR)
+          </a>
+          <a th:href="@{/forecasting}" class="btn btn-outline-warning"
+             sec:authorize="hasAnyRole('ADMIN','INVENTORY_MANAGER')">
+            <i class="bi bi-graph-up-arrow me-2"></i>AI Demand Forecast
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</th:block>
+
+<th:block th:fragment="scripts">
+<script th:inline="javascript">
+/*<![CDATA[*/
+(function() {
+  var data = /*[[${stats.dailySalesChart}]]*/ [];
+
+  if (!data || data.length === 0 || !data.some(function(d){ return (d.revenue || 0) > 0; })) {
+    document.getElementById('noDataMsg').style.display = 'block';
+    document.getElementById('dailyChart').style.display = 'none';
+    return;
+  }
+
+  var labels   = data.map(function(d) { return d.label || ('Day ' + d.day); });
+  var revenues = data.map(function(d) { return +(d.revenue) || 0; });
+  var counts   = data.map(function(d) { return +(d.count)   || 0; });
+  var maxRev   = Math.max.apply(null, revenues.concat([1]));
+
+  new Chart(document.getElementById('dailyChart'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Revenue (Rs.)',
+          data: revenues,
+          backgroundColor: revenues.map(function(v) {
+            return v === maxRev && v > 0 ? 'rgba(37,99,235,0.85)' : 'rgba(37,99,235,0.2)';
+          }),
+          borderColor: revenues.map(function(v) {
+            return v === maxRev && v > 0 ? '#1d4ed8' : '#93c5fd';
+          }),
+          borderWidth: 1.5,
+          borderRadius: 4,
+          borderSkipped: false,
+          yAxisID: 'yRev'
+        },
+        {
+          label: 'Sales',
+          data: counts,
+          type: 'line',
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245,158,11,0.08)',
+          borderWidth: 2,
+          pointBackgroundColor: '#f59e0b',
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          fill: true,
+          tension: 0.4,
+          yAxisID: 'ySales'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { font: { size: 11 }, boxWidth: 12, padding: 10 }
+        },
+        tooltip: {
+          backgroundColor: '#1e293b',
+          titleColor: '#94a3b8',
+          bodyColor: '#f8fafc',
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            label: function(ctx) {
+              if (ctx.datasetIndex === 0)
+                return '  Revenue: Rs. ' + Number(ctx.parsed.y).toLocaleString();
+              return '  Sales: ' + ctx.parsed.y;
+            }
+          }
+        }
+      },
+      scales: {
+        yRev: {
+          position: 'left',
+          beginAtZero: true,
+          grid: { color: '#f1f5f9' },
+          border: { display: false },
+          ticks: {
+            color: '#64748b',
+            font: { size: 10 },
+            maxTicksLimit: 6,
+            callback: function(v) {
+              return v >= 1000 ? 'Rs.' + (v/1000).toFixed(0) + 'k' : 'Rs.' + v;
+            }
+          }
+        },
+        ySales: {
+          position: 'right',
+          beginAtZero: true,
+          grid: { drawOnChartArea: false },
+          border: { display: false },
+          ticks: {
+            color: '#f59e0b',
+            font: { size: 10 },
+            stepSize: 1,
+            callback: function(v) { return Number.isInteger(v) ? v : ''; }
+          }
+        },
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: {
+            color: '#64748b',
+            font: { size: 10 },
+            maxRotation: 45,
+            autoSkip: true,
+            maxTicksLimit: 15
+          }
+        }
+      }
+    }
+  });
+})();
+/*]]>*/
+</script>
+</th:block>
+
+</html>
