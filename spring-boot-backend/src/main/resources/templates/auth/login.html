@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login | StockSense</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 430px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.35);
+    }
+    .brand { text-align: center; margin-bottom: 30px; }
+    .brand-icon {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 14px;
+    }
+    .brand-icon i { color: #fff; font-size: 2rem; }
+    .brand h4 { font-weight: 700; color: #0f172a; margin: 0; font-size: 1.4rem; }
+    .brand p { color: #64748b; font-size: .85rem; margin: 4px 0 0; }
+    .form-label { font-weight: 500; font-size: .85rem; color: #374151; }
+    .form-control { border-radius: 8px; padding: 11px 14px; border-color: #e2e8f0; font-size: .9rem; }
+    .form-control:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+    .input-group-text { background: #f8fafc; border-color: #e2e8f0; }
+    .btn-login {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border: none; border-radius: 8px; padding: 12px;
+      font-weight: 600; font-size: .95rem;
+    }
+    .btn-login:hover { opacity: .92; }
+    .alert { border-radius: 8px; font-size: .85rem; }
+    .demo-box {
+      background: #f8fafc; border: 1px solid #e2e8f0;
+      border-radius: 10px; padding: 14px; font-size: .82rem;
+    }
+    .demo-box .title { font-weight: 600; color: #374151; margin-bottom: 10px; }
+    .demo-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
+    .demo-row .role { color: #64748b; }
+    .demo-row .creds { font-family: monospace; background: #e2e8f0; padding: 2px 7px; border-radius: 4px; cursor: pointer; }
+    .demo-row .creds:hover { background: #cbd5e1; }
+  </style>
+</head>
+<body>
+<div class="login-card">
+
+  <div class="brand">
+    <div class="brand-icon"><i class="bi bi-boxes"></i></div>
+    <h4><span style="color:#2563eb;">Stock</span>Sense</h4>
+    <p>AI-Powered Inventory Management System</p>
+  </div>
+
+  <!-- Error/Success Alerts -->
+  <div th:if="${param.error}" class="alert alert-danger mb-3">
+    <i class="bi bi-exclamation-circle me-2"></i>
+    <strong>Login failed.</strong> Invalid username or password.
+  </div>
+  <div th:if="${param.logout}" class="alert alert-success mb-3">
+    <i class="bi bi-check-circle me-2"></i>You have been logged out successfully.
+  </div>
+  <div th:if="${param.expired}" class="alert alert-warning mb-3">
+    <i class="bi bi-clock me-2"></i>Your session has expired. Please login again.
+  </div>
+
+  <!-- Login Form - NO CSRF (disabled in SecurityConfig) -->
+  <form action="/login" method="post">
+    <div class="mb-3">
+      <label class="form-label">Username</label>
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-person" style="color:#64748b;"></i></span>
+        <input type="text" name="username" id="username" class="form-control"
+               placeholder="Enter your username" required autofocus autocomplete="username"/>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <label class="form-label">Password</label>
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-lock" style="color:#64748b;"></i></span>
+        <input type="password" name="password" id="passwordField" class="form-control"
+               placeholder="Enter your password" required autocomplete="current-password"/>
+        <button type="button" class="btn btn-outline-secondary" onclick="togglePwd()" tabindex="-1">
+          <i class="bi bi-eye" id="eyeIcon"></i>
+        </button>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-login w-100 text-white mb-3">
+      <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+    </button>
+  </form>
+
+  <!-- Demo Credentials -->
+  <div class="demo-box">
+    <div class="title"><i class="bi bi-info-circle me-1 text-primary"></i>Demo Credentials (click to fill)</div>
+    <div class="demo-row">
+      <span class="role">🔴 Admin</span>
+      <span class="creds" onclick="fillLogin('admin','admin123')">admin / admin123</span>
+    </div>
+    <div class="demo-row">
+      <span class="role">🟡 Manager</span>
+      <span class="creds" onclick="fillLogin('manager','admin123')">manager / admin123</span>
+    </div>
+    <div class="demo-row">
+      <span class="role">🟢 Staff</span>
+      <span class="creds" onclick="fillLogin('staff1','admin123')">staff1 / admin123</span>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  function togglePwd() {
+    const f = document.getElementById('passwordField');
+    const i = document.getElementById('eyeIcon');
+    if (f.type === 'password') {
+      f.type = 'text';
+      i.className = 'bi bi-eye-slash';
+    } else {
+      f.type = 'password';
+      i.className = 'bi bi-eye';
+    }
+  }
+
+  function fillLogin(user, pass) {
+    document.getElementById('username').value = user;
+    document.getElementById('passwordField').value = pass;
+    document.getElementById('username').focus();
+  }
+</script>
+</body>
+</html>
