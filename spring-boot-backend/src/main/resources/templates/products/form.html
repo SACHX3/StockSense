@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::content}, ~{::scripts})}">
+<th:block th:fragment="content">
+
+<div class="page-header">
+  <h4 th:text="${productId != null ? 'Edit Product' : 'Add New Product'}">Product Form</h4>
+  <a th:href="@{/products}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Back
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    <form th:action="${productId != null ? '/products/edit/' + productId : '/products/create'}"
+          method="post" enctype="multipart/form-data">
+
+      <div class="row g-3">
+        <!-- Basic Info -->
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-info-circle me-2"></i>Basic Information</div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-8">
+                  <label class="form-label">Product Name *</label>
+                  <input type="text" name="name" class="form-control" required th:value="${product.name}" placeholder="e.g. Coca-Cola 330ml Can"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Unit *</label>
+                  <select name="unit" class="form-select">
+                    <option th:each="u : ${ {'pcs','kg','g','l','ml','box','pack','bottle','can','bag','bar','loaf','tin'}}"
+                            th:value="${u}" th:text="${u}"
+                            th:selected="${product.unit == u}">pcs</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">SKU *</label>
+                  <input type="text" name="sku" class="form-control" required th:value="${product.sku}" placeholder="e.g. BEV-001"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Barcode</label>
+                  <input type="text" name="barcode" class="form-control" th:value="${product.barcode}" placeholder="Scan or enter barcode"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Category *</label>
+                  <select name="categoryId" class="form-select" required>
+                    <option value="">Select Category</option>
+                    <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}"
+                            th:selected="${product.categoryId == cat.id}">Category</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Supplier</label>
+                  <select name="supplierId" class="form-select">
+                    <option value="">No Supplier</option>
+                    <option th:each="s : ${suppliers}" th:value="${s.id}" th:text="${s.name}"
+                            th:selected="${product.supplierId == s.id}">Supplier</option>
+                  </select>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Description</label>
+                  <textarea name="description" class="form-control" rows="2" th:text="${product.description}" placeholder="Optional product description"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pricing & Stock -->
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header"><i class="bi bi-currency-exchange me-2"></i>Pricing</div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label">Buying Price (Rs.) *</label>
+                <input type="number" step="0.01" min="0" name="buyingPrice" class="form-control" required th:value="${product.buyingPrice}" placeholder="0.00"/>
+              </div>
+              <div>
+                <label class="form-label">Selling Price (Rs.) *</label>
+                <input type="number" step="0.01" min="0.01" name="sellingPrice" class="form-control" required th:value="${product.sellingPrice}" placeholder="0.00"/>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock Levels -->
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header"><i class="bi bi-layers me-2"></i>Stock Levels</div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label">Current Quantity *</label>
+                <input type="number" min="0" name="quantity" class="form-control" required th:value="${product.quantity}" placeholder="0"/>
+              </div>
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="form-label">Min Stock Level</label>
+                  <input type="number" min="0" name="minStockLevel" class="form-control" th:value="${product.minStockLevel != null ? product.minStockLevel : 10}"/>
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Max Stock Level</label>
+                  <input type="number" min="0" name="maxStockLevel" class="form-control" th:value="${product.maxStockLevel != null ? product.maxStockLevel : 1000}"/>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Image -->
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-image me-2"></i>Product Image</div>
+            <div class="card-body">
+              <!-- Hidden flag for image removal -->
+              <input type="hidden" name="removeImage" id="removeImageField" value="false"/>
+
+              <div class="row align-items-center g-3">
+                <!-- Current image with delete option -->
+                <div class="col-auto" th:if="${existingImage}" id="currentImgWrap">
+                  <div class="position-relative d-inline-block">
+                    <img id="currentProductImg"
+                         th:src="@{'/' + ${existingImage}}"
+                         style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:1px solid #e2e8f0;"
+                         onerror="this.parentElement.parentElement.style.display='none'"/>
+                    <!-- X button overlaid on image -->
+                    <button type="button"
+                            onclick="removeProductImage()"
+                            title="Delete image"
+                            style="position:absolute;top:-8px;right:-8px;width:24px;height:24px;
+                                   border-radius:50%;background:#ef4444;border:2px solid #fff;
+                                   color:#fff;display:flex;align-items:center;justify-content:center;
+                                   font-size:13px;cursor:pointer;padding:0;line-height:1;">
+                      <i class="bi bi-x-lg" style="font-size:10px;"></i>
+                    </button>
+                  </div>
+                  <div style="font-size:.75rem;color:#94a3b8;margin-top:4px;text-align:center;">Current</div>
+                </div>
+
+                <!-- Removed notice -->
+                <div class="col-auto" id="removedNotice" style="display:none;">
+                  <div style="width:90px;height:90px;border-radius:10px;border:2px dashed #fca5a5;
+                              background:#fff5f5;display:flex;flex-direction:column;
+                              align-items:center;justify-content:center;gap:4px;">
+                    <i class="bi bi-image" style="font-size:1.5rem;color:#fca5a5;"></i>
+                    <span style="font-size:.65rem;color:#ef4444;">Removed</span>
+                  </div>
+                  <button type="button" onclick="undoRemoveProductImage()"
+                          style="font-size:.72rem;width:90px;margin-top:4px;"
+                          class="btn btn-sm btn-outline-secondary">Undo</button>
+                </div>
+
+                <!-- New image preview (shown after file chosen) -->
+                <div class="col-auto" id="newImgPreview" style="display:none;">
+                  <img id="newImgTag"
+                       style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:2px solid #2563eb;"/>
+                  <div style="font-size:.75rem;color:#2563eb;margin-top:4px;text-align:center;">New</div>
+                </div>
+
+                <!-- Upload input -->
+                <div class="col">
+                  <label class="form-label text-muted small">
+                    <th:block th:if="${existingImage}">Upload new image to replace</th:block>
+                    <th:block th:unless="${existingImage}">Choose product image</th:block>
+                  </label>
+                  <input type="file" name="imageFile" id="productImageInput"
+                         class="form-control" accept="image/jpeg,image/png,image/gif,image/webp"
+                         onchange="previewNewProductImage(this)"/>
+                  <small class="text-muted">Accepted: JPG, PNG, WEBP. Max 10MB. Leave blank to keep current.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg me-1"></i>
+              <span th:text="${productId != null ? 'Update Product' : 'Create Product'}">Save</span>
+            </button>
+            <a th:href="@{/products}" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+</th:block>
+<th:block th:fragment="scripts">
+<script>
+function removeProductImage() {
+  document.getElementById('removeImageField').value = 'true';
+  var wrap = document.getElementById('currentImgWrap');
+  if (wrap) wrap.style.display = 'none';
+  document.getElementById('removedNotice').style.display = 'block';
+  // clear file input
+  document.getElementById('productImageInput').value = '';
+  document.getElementById('newImgPreview').style.display = 'none';
+}
+
+function undoRemoveProductImage() {
+  document.getElementById('removeImageField').value = 'false';
+  document.getElementById('removedNotice').style.display = 'none';
+  var wrap = document.getElementById('currentImgWrap');
+  if (wrap) wrap.style.display = 'block';
+}
+
+function previewNewProductImage(input) {
+  if (input.files && input.files[0]) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('newImgTag').src = e.target.result;
+      document.getElementById('newImgPreview').style.display = 'block';
+      // Cancel remove if user picked a new image
+      document.getElementById('removeImageField').value = 'false';
+      document.getElementById('removedNotice').style.display = 'none';
+    };
+    reader.readAsDataURL(input.files[0]);
+  } else {
+    document.getElementById('newImgPreview').style.display = 'none';
+  }
+}
+</script></th:block>
+</html>
