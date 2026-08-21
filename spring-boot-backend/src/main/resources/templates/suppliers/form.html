@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::content}, ~{::scripts})}">
+<th:block th:fragment="content">
+<div class="page-header">
+  <h4 th:text="${supplierId != null ? 'Edit Supplier' : 'Add Supplier'}">Supplier Form</h4>
+  <a th:href="@{/suppliers}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <form th:action="${supplierId != null ? '/suppliers/edit/' + supplierId : '/suppliers/create'}" method="post">
+      <div class="card">
+        <div class="card-header"><i class="bi bi-truck me-2"></i>Supplier Information</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label">Company Name *</label>
+              <input type="text" name="name" class="form-control" required th:value="${supplier.name}" placeholder="e.g. Ceylon Beverages Ltd"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Contact Person</label>
+              <input type="text" name="contactPerson" class="form-control" th:value="${supplier.contactPerson}"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" name="email" class="form-control" th:value="${supplier.email}"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Phone *</label>
+              <input type="text" name="phone" class="form-control" required th:value="${supplier.phone}" placeholder="+94 11 234 5678"/>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Address</label>
+              <textarea name="address" class="form-control" rows="2" th:text="${supplier.address}"></textarea>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">City</label>
+              <input type="text" name="city" class="form-control" th:value="${supplier.city}"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Country</label>
+              <input type="text" name="country" class="form-control" th:value="${supplier.country ?: 'Sri Lanka'}"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Tax Number</label>
+              <input type="text" name="taxNumber" class="form-control" th:value="${supplier.taxNumber}"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Payment Terms</label>
+              <select name="paymentTerms" class="form-select">
+                <option value="">Select Terms</option>
+                <option th:each="t : ${ {'IMMEDIATE','NET 7','NET 15','NET 30','NET 45','NET 60'}}"
+                        th:value="${t}" th:text="${t}"
+                        th:selected="${supplier.paymentTerms == t}">Terms</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Notes</label>
+              <textarea name="notes" class="form-control" rows="2" th:text="${supplier.notes}"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i>
+            <span th:text="${supplierId != null ? 'Update Supplier' : 'Create Supplier'}">Save</span>
+          </button>
+          <a th:href="@{/suppliers}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+</th:block>
+<th:block th:fragment="scripts"></th:block>
+</html>
