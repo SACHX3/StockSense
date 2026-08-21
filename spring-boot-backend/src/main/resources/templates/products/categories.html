@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout(~{::content}, ~{::scripts})}">
+<th:block th:fragment="content">
+
+<div class="page-header">
+  <h4><i class="bi bi-tags me-2 text-primary"></i>Product Categories</h4>
+  <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCatModal"
+          sec:authorize="hasAnyRole('ADMIN','INVENTORY_MANAGER')">
+    <i class="bi bi-plus-lg me-1"></i>Add Category
+  </button>
+</div>
+
+<div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show">
+  <i class="bi bi-check-circle me-2"></i><span th:text="${successMsg}"></span>
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show">
+  <i class="bi bi-exclamation-circle me-2"></i><span th:text="${errorMsg}"></span>
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th style="width:50px;">#</th>
+          <th style="width:70px;">Image</th>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Status</th>
+          <th sec:authorize="hasAnyRole('ADMIN','INVENTORY_MANAGER')">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:if="${#lists.isEmpty(categories)}">
+          <td colspan="6" class="text-center text-muted py-4">No categories found.</td>
+        </tr>
+        <tr th:each="cat : ${categories}">
+          <td class="text-muted align-middle" th:text="${cat.id}"></td>
+          <td style="padding:8px;vertical-align:middle;">
+            <div style="width:46px;height:46px;border-radius:10px;overflow:hidden;
+                        background:#f1f5f9;display:flex;align-items:center;
+                        justify-content:center;border:1px solid #e2e8f0;">
+              <img th:if="${cat.imagePath}"
+                   th:src="@{'/' + ${cat.imagePath}}"
+                   style="width:46px;height:46px;object-fit:cover;"
+                   onerror="this.parentElement.innerHTML='&lt;i class=&quot;bi bi-tags&quot; style=&quot;color:#94a3b8;font-size:1.3rem;&quot;&gt;&lt;/i&gt;'"/>
+              <i th:unless="${cat.imagePath}" class="bi bi-tags" style="color:#94a3b8;font-size:1.3rem;"></i>
+            </div>
+          </td>
+          <td class="align-middle"><strong th:text="${cat.name}">Name</strong></td>
+          <td class="align-middle text-muted" th:text="${cat.description ?: '-'}">Desc</td>
+          <td class="align-middle">
+            <span th:classappend="${cat.isActive} ? 'badge bg-success' : 'badge bg-secondary'"
+                  th:text="${cat.isActive} ? 'Active' : 'Inactive'">Active</span>
+          </td>
+          <td class="align-middle" sec:authorize="hasAnyRole('ADMIN','INVENTORY_MANAGER')">
+            <div class="d-flex gap-1">
+              <button class="btn btn-sm btn-outline-primary edit-cat-btn"
+                      th:data-id="${cat.id}"
+                      th:data-name="${cat.name}"
+                      th:data-desc="${cat.description ?: ''}"
+                      th:data-image="${cat.imagePath ?: ''}"
+                      title="Edit">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <form th:action="@{'/categories/delete/' + ${cat.id}}" method="post"
+                    style="display:inline;" sec:authorize="hasRole('ADMIN')"
+                    onsubmit="return confirm('Delete this category?')">
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Add Category Modal ──────────────────────────────────────── -->
+<div class="modal fade" id="addCatModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form th:action="@{/categories/create}" method="post" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-plus-lg me-2"></i>Add Category</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-600">Category Name *</label>
+            <input type="text" name="name" class="form-control" required placeholder="e.g. Beverages"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-600">Description</label>
+            <textarea name="description" class="form-control" rows="2" placeholder="Short description"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-600">Category Image <span class="text-muted fw-400">(optional)</span></label>
+            <input type="file" name="imageFile" class="form-control"
+                   accept="image/jpeg,image/png,image/gif,image/webp"
+                   onchange="previewAddImg(this)"/>
+            <div id="addPreview" class="mt-2" style="display:none;">
+              <img id="addPreviewImg"
+                   style="height:72px;border-radius:8px;object-fit:cover;border:1px solid #e2e8f0;"/>
+            </div>
+            <small class="text-muted">JPG, PNG, WEBP — optional</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit Category Modal ─────────────────────────────────────── -->
+<div class="modal fade" id="editCatModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="editCatForm" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="removeImage" id="removeImageField" value="false"/>
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Edit Category</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-600">Category Name *</label>
+            <input type="text" id="editName" name="name" class="form-control" required/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-600">Description</label>
+            <textarea id="editDesc" name="description" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-600">Category Image</label>
+            <div class="d-flex align-items-start gap-3 flex-wrap">
+
+              <!-- Current image with ✕ overlay -->
+              <div id="currentImgSection" style="display:none;">
+                <div class="position-relative d-inline-block">
+                  <img id="currentImgTag"
+                       style="width:80px;height:80px;object-fit:cover;
+                              border-radius:10px;border:1px solid #e2e8f0;"/>
+                  <button type="button" onclick="removeCatImage()"
+                          title="Delete image"
+                          style="position:absolute;top:-8px;right:-8px;width:24px;height:24px;
+                                 border-radius:50%;background:#ef4444;border:2px solid #fff;
+                                 color:#fff;display:flex;align-items:center;justify-content:center;
+                                 cursor:pointer;padding:0;">
+                    <i class="bi bi-x-lg" style="font-size:10px;"></i>
+                  </button>
+                </div>
+                <div style="font-size:.72rem;color:#94a3b8;margin-top:4px;text-align:center;">Current</div>
+              </div>
+
+              <!-- Removed placeholder -->
+              <div id="removedNotice" style="display:none;">
+                <div style="width:80px;height:80px;border-radius:10px;
+                            border:2px dashed #fca5a5;background:#fff5f5;
+                            display:flex;flex-direction:column;
+                            align-items:center;justify-content:center;gap:4px;">
+                  <i class="bi bi-tags" style="font-size:1.4rem;color:#fca5a5;"></i>
+                  <span style="font-size:.62rem;color:#ef4444;">Removed</span>
+                </div>
+                <button type="button" onclick="undoRemoveCatImage()"
+                        style="font-size:.72rem;width:80px;margin-top:4px;"
+                        class="btn btn-sm btn-outline-secondary">Undo</button>
+              </div>
+
+              <!-- New image preview -->
+              <div id="editPreview" style="display:none;">
+                <img id="editPreviewImg"
+                     style="width:80px;height:80px;object-fit:cover;
+                            border-radius:10px;border:2px solid #2563eb;"/>
+                <div style="font-size:.72rem;color:#2563eb;margin-top:4px;text-align:center;">New</div>
+              </div>
+
+              <!-- Upload input -->
+              <div class="flex-grow-1">
+                <input type="file" name="imageFile" id="editImageInput" class="form-control"
+                       accept="image/jpeg,image/png,image/gif,image/webp"
+                       onchange="previewEditImg(this)"/>
+                <small class="text-muted d-block mt-1">Leave blank to keep current image</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+</th:block>
+<th:block th:fragment="scripts">
+<script>
+// ── Open edit modal ────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.edit-cat-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id    = this.getAttribute('data-id');
+      var name  = this.getAttribute('data-name');
+      var desc  = this.getAttribute('data-desc');
+      var image = this.getAttribute('data-image');
+
+      document.getElementById('editCatForm').action     = '/categories/edit/' + id;
+      document.getElementById('editName').value          = name;
+      document.getElementById('editDesc').value          = desc;
+      document.getElementById('removeImageField').value  = 'false';
+      document.getElementById('editImageInput').value    = '';
+      document.getElementById('editPreview').style.display    = 'none';
+      document.getElementById('removedNotice').style.display  = 'none';
+
+      var section = document.getElementById('currentImgSection');
+      var tag     = document.getElementById('currentImgTag');
+      if (image) {
+        tag.src = '/' + image;
+        tag.onerror = function() { section.style.display = 'none'; };
+        section.style.display = 'block';
+      } else {
+        section.style.display = 'none';
+      }
+      new bootstrap.Modal(document.getElementById('editCatModal')).show();
+    });
+  });
+});
+
+// ── ✕ Delete image ─────────────────────────────────────────────────
+function removeCatImage() {
+  document.getElementById('removeImageField').value       = 'true';
+  document.getElementById('currentImgSection').style.display = 'none';
+  document.getElementById('removedNotice').style.display      = 'block';
+  document.getElementById('editImageInput').value              = '';
+  document.getElementById('editPreview').style.display         = 'none';
+}
+
+// ── Undo delete ────────────────────────────────────────────────────
+function undoRemoveCatImage() {
+  document.getElementById('removeImageField').value       = 'false';
+  document.getElementById('removedNotice').style.display      = 'none';
+  document.getElementById('currentImgSection').style.display  = 'block';
+}
+
+// ── Preview new upload (edit modal) ───────────────────────────────
+function previewEditImg(input) {
+  var div = document.getElementById('editPreview');
+  var img = document.getElementById('editPreviewImg');
+  if (input.files && input.files[0]) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      img.src = e.target.result;
+      div.style.display = 'block';
+      // Uploading new → cancel remove
+      document.getElementById('removeImageField').value       = 'false';
+      document.getElementById('removedNotice').style.display      = 'none';
+      document.getElementById('currentImgSection').style.display  = 'none';
+    };
+    reader.readAsDataURL(input.files[0]);
+  } else {
+    div.style.display = 'none';
+  }
+}
+
+// ── Preview new upload (add modal) ────────────────────────────────
+function previewAddImg(input) {
+  var div = document.getElementById('addPreview');
+  var img = document.getElementById('addPreviewImg');
+  if (input.files && input.files[0]) {
+    var reader = new FileReader();
+    reader.onload = function(e) { img.src = e.target.result; div.style.display = 'block'; };
+    reader.readAsDataURL(input.files[0]);
+  } else {
+    div.style.display = 'none';
+  }
+}
+</script>
+</th:block>
+</html>
